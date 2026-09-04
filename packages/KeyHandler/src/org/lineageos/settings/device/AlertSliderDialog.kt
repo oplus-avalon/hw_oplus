@@ -13,6 +13,7 @@ import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.app.Dialog
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
@@ -30,7 +31,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 
-class AlertSliderDialog(private val context: Context) :
+class AlertSliderDialog(private val context: Context, private val sysuiContext: Context) :
     Dialog(context, R.style.alert_slider_theme) {
     private val dialogView by lazy { findViewById<LinearLayout>(R.id.alert_slider_dialog)!! }
     private val frameView by lazy { findViewById<ViewGroup>(R.id.alert_slider_view)!! }
@@ -118,7 +119,7 @@ class AlertSliderDialog(private val context: Context) :
     }
 
     @Synchronized
-    fun setState(position: Int, ringerMode: Int, packageName: String? = null) {
+    fun setState(position: Int, ringerMode: Int, packageName: String? = null, invertColors: Boolean = false) {
         val delta =
             length *
                 when (position) {
@@ -132,9 +133,9 @@ class AlertSliderDialog(private val context: Context) :
         if (isLandscape) endX += delta else endY += delta
 
         if (isShowing) {
-            animatePosition(endX, endY, position, ringerMode, packageName)
+            animatePosition(endX, endY, position, ringerMode, packageName, invertColors)
         } else {
-            applyUiMode(ringerMode, packageName)
+            applyUiMode(ringerMode, packageName, invertColors)
             applyPositionAndBackground(endX, endY, position)
         }
     }
@@ -146,6 +147,7 @@ class AlertSliderDialog(private val context: Context) :
         position: Int,
         ringerMode: Int,
         packageName: String? = null,
+        invertColors: Boolean = false,
     ) {
         if (isAnimating) animator.cancel()
         animator = ValueAnimator()
@@ -173,7 +175,7 @@ class AlertSliderDialog(private val context: Context) :
             object : Animator.AnimatorListener {
                 override fun onAnimationStart(animation: Animator) {
                     isAnimating = true
-                    applyUiMode(ringerMode, packageName)
+                    applyUiMode(ringerMode, packageName, invertColors)
                     val transition =
                         TransitionDrawable(
                             arrayOf(
@@ -202,7 +204,7 @@ class AlertSliderDialog(private val context: Context) :
         animator.start()
     }
 
-    private fun applyUiMode(ringerMode: Int, packageName: String? = null) {
+    private fun applyUiMode(ringerMode: Int, packageName: String? = null, invertColors: Boolean = false) {
         when (ringerMode) {
             AudioManager.RINGER_MODE_SILENT, MODE_SILENT -> {
                 iconView.setImageResource(R.drawable.ic_volume_ringer_mute)
@@ -289,7 +291,30 @@ class AlertSliderDialog(private val context: Context) :
                 textView.setText(R.string.alert_slider_mode_none)
             }
         }
-        textView.setTextColor(context.getColor(R.color.alert_slider_text_color))
+        applyUiTheme(invertColors)
+    }
+
+    private fun applyUiTheme(invertColors: Boolean) {
+        val currentUiMode = sysuiContext.resources.configuration.uiMode
+        val isDark =
+            (currentUiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+        val bgResId =
+            if (isDark) android.R.color.system_neutral1_800
+            else android.R.color.system_neutral1_100
+        val accentResId =
+            if (isDark) android.R.color.system_accent1_100
+            else android.R.color.system_accent1_500
+
+        val bgColor = sysuiContext.getColor(bgResId)
+        val accentColor = sysuiContext.getColor(accentResId)
+        val activeFg = if (invertColors) bgColor else accentColor
+        val activeBg = if (invertColors) accentColor else bgColor
+
+        textView.setTextColor(activeFg)
+        iconView.imageTintList = ColorStateList.valueOf(activeFg)
+        frameView.backgroundTintList = ColorStateList.valueOf(activeBg)
     }
 
     private fun applyPositionAndBackground(endX: Int, endY: Int, position: Int) {
