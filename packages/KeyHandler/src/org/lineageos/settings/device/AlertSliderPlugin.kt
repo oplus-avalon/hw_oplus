@@ -27,7 +27,12 @@ class AlertSliderPlugin : OverlayPlugin {
     private lateinit var handler: NotificationHandler
     private val dialogLock = Any()
 
-    private data class NotificationInfo(val position: Int, val mode: Int, val packageName: String? = null)
+    private data class NotificationInfo(
+        val position: Int,
+        val mode: Int,
+        val packageName: String? = null,
+        val invertColors: Boolean = false,
+    )
 
     private val updateReceiver: BroadcastReceiver =
         object : BroadcastReceiver() {
@@ -41,12 +46,15 @@ class AlertSliderPlugin : OverlayPlugin {
                             val ringer =
                                 intent.getIntExtra("mode", NONE).takeIf { it != NONE } ?: return
 
+                            val invert = intent.getBooleanExtra("invertColors", false)
+
                             handler
                                 .obtainMessage(
                                     MSG_DIALOG_UPDATE,
                                     NotificationInfo(
                                         intent.getIntExtra("position", KeyHandler.POSITION_BOTTOM),
                                         ringer,
+                                        invertColors = invert,
                                     ),
                                 )
                                 .sendToTarget()
@@ -87,7 +95,7 @@ class AlertSliderPlugin : OverlayPlugin {
     override fun onCreate(context: Context, plugin: Context) {
         ambientConfig = AmbientDisplayConfiguration(context)
         pluginContext = plugin
-        handler = NotificationHandler(plugin)
+        handler = NotificationHandler(plugin, context)
 
         val filter =
             IntentFilter().apply {
@@ -104,9 +112,11 @@ class AlertSliderPlugin : OverlayPlugin {
 
     override fun setup(statusBar: View?, navBar: View?) {}
 
-    private inner class NotificationHandler(var context: Context) :
-        Handler(Looper.getMainLooper()) {
-        private var dialog = AlertSliderDialog(context)
+    private inner class NotificationHandler(
+        var context: Context,
+        private var sysuiContext: Context,
+    ) : Handler(Looper.getMainLooper()) {
+        private var dialog = AlertSliderDialog(context, sysuiContext)
         private var currDensity = context.resources.configuration.densityDpi
         private var currRotation = context.display.rotation
         private var currSmallestWidth = context.resources.configuration.smallestScreenWidthDp
@@ -168,7 +178,7 @@ class AlertSliderPlugin : OverlayPlugin {
                 lastInfo = info
                 handleResetTimeout()
                 launchDozePulse()
-                dialog.setState(info.position, info.mode, info.packageName)
+                dialog.setState(info.position, info.mode, info.packageName, info.invertColors)
             }
         }
 
@@ -187,8 +197,8 @@ class AlertSliderPlugin : OverlayPlugin {
                 val wasShowing = showing
 
                 showing = false
-                dialog = AlertSliderDialog(context)
-                lastInfo?.let { dialog.setState(it.position, it.mode, it.packageName) }
+                dialog = AlertSliderDialog(context, sysuiContext)
+                lastInfo?.let { dialog.setState(it.position, it.mode, it.packageName, it.invertColors) }
 
                 if (wasShowing) {
                     showing = true
