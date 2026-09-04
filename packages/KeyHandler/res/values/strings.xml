@@ -31,4 +31,6 @@
     <string name="alert_slider_mode_rotation_landscape_90">Landscape (90°)</string>
     <string name="alert_slider_mode_rotation_landscape_270">Landscape (270°)</string>
     <string name="alert_slider_mode_app_none">No app selected</string>
+    <string name="alert_slider_invert_colors_title">Invert dialog colors</string>
+    <string name="alert_slider_invert_colors_summary">Swap the icon/text and background colors of the alert slider dialog</string>
 </resources>
