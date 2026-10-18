@@ -14,6 +14,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.media.AudioSystem
+import android.os.UserHandle
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -175,11 +176,12 @@ class KeyHandler(private val context: Context) : DeviceKeyHandler {
     }
 
     private fun sendNotification(position: Int, mode: Int) {
-        context.sendBroadcast(
+        context.sendBroadcastAsUser(
             Intent(CHANGED_ACTION).apply {
                 putExtra("position", position)
                 putExtra("mode", mode)
-            }
+            },
+            UserHandle.ALL,
         )
     }
 
