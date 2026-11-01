@@ -23,6 +23,7 @@ allow hal_lineage_oplus_als_aidl hal_graphics_mapper_hwservice:hwservice_manager
 
 allow hal_lineage_oplus_als_aidl surfaceflinger_service:service_manager find;
 
+allow hal_lineage_oplus_als_aidl gpu_device:chr_file rw_file_perms;
 allow hal_lineage_oplus_als_aidl ion_device:chr_file rw_file_perms;
 
 get_prop(hal_lineage_oplus_als_aidl, vendor_sensors_als_prop)
